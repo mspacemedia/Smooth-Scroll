@@ -26,22 +26,29 @@ Developed and open-sourced by **M-SpaceMedia**.
 1.  **Download:** Save the full code from the primary file, `smooth-scroll.js`.
 2.  **Include:** Link the file in your HTML using a `<script>` tag, preferably right before the closing `</body>` tag.
 
-### 2. Operation Guide
+### 2. Operation Guide (Diagonal Scroll)
+The utility allows for complex smooth scrolling by controlling four independent variables, enabling vertical, horizontal, or diagonal motion.
 
+| Control | Purpose | Default Value | Notes |
+| :--- | :--- | :--- | :--- |
+| **Y-Distance (px/fr)** | Sets the **Vertical** distance to travel per frame. | `4` | `4` is recommended for standard smooth video. |
+| **X-Distance (px/fr)** | Sets the **Horizontal** distance to travel per frame. | `0` | Set this value $>0$ for diagonal scrolling. |
+| **Y/X Direction** | Sets the direction for each axis (Down/Up and Right/Left). | `+` (Down/Right) | Set to `-` for Up/Left travel. |
+| **Interval (ms) / FPS** | Sets the time delay between each scroll step (controls smoothness). | `16` ms ($\approx 60 \text{ FPS}$) | Use a lower value for higher frame rates (e.g., $8\text{ms}$ for $120 \text{ FPS}$). |
+
+### 3. Quick Actions
 | Action | Control | Notes |
 | :--- | :--- | :--- |
-| **Start Scroll** | Click **"Start Auto Scroll"** or press **<kbd>Ctrl</kbd> + <kbd>S</kbd>** | A 3-second countdown will start, and the panel will hide once scrolling begins. |
-| **Stop Scroll** | Click **"Stop Scroll"** or press **<kbd>Ctrl</kbd> + <kbd>S</kbd>** | The panel will instantly reappear. |
-| **Adjust Speed** | Use the **Speed (px/frame)** input field. | Changes take effect on the next start (or immediately if scrolling is active). |
+| **Start/Stop Toggle** | Click **"Start/Stop"** or press **<kbd>Ctrl</kbd> + <kbd>S</kbd>** | Requires at least one X or Y distance to be set above 0. Panel hides on start. |
+| **Fine Tune Y-Speed** | **Arrow Keys** (UP/DOWN) or **Vertical Touch Slide** over panel. | Adjusts the **Y-Distance** per frame while scrolling. |
+| **Fine Tune X-Speed** | **Horizontal Touch Slide** over panel. | Adjusts the **X-Distance** per frame while scrolling. |
 | **Manual Scroll** | Use the **Scroll Up/Down** buttons. | Useful for setting the starting position before a recording. |
-
----
 
 ## 🛠️ Development & Testing
 
 A test page is included in this repository to immediately verify the utility's function:
 
-* **`test-page.html`:** An example HTML file with six colored screens (100vh deep) to easily test the scroll effect across various speeds and devices.
+* **`smooth-scroll.htm`:** An example HTML file with six colored screens (100vh deep) to easily test the scroll effect across various speeds and devices.
 
 ## 📄 License
 
