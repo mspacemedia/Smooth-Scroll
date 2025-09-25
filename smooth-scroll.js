@@ -1,22 +1,23 @@
 /**
  * Smooth Scroll Utility - Open Source Edition (M-SpaceMedia)
  * * FINAL VERSION: Enables Diagonal Scrolling by allowing independent control 
- * of Horizontal (X) and Vertical (Y) distance per frame.
+ * of Horizontal (X) and Vertical (Y) distance per frame. Includes robust 
+ * boundary checking to stop scrolling precisely at the edge of the content.
  */
 (function() {
     // --- Configuration ---
     const PANEL_ID = 'dev-scroll-utility-panel';
-    const DEFAULT_X_DISTANCE_PER_FRAME = 0; // New default: 0 for no horizontal movement
+    const DEFAULT_X_DISTANCE_PER_FRAME = 0; // Horizontal distance (for diagonal scroll)
     const DEFAULT_Y_DISTANCE_PER_FRAME = 4; // Vertical distance (default smooth speed)
     const DEFAULT_COUNTDOWN_SECONDS = 3;
-    const DEFAULT_INTERVAL_MS = 16; 
+    const DEFAULT_INTERVAL_MS = 16; // Standard 60 FPS
     const SCROLL_AMOUNT_PER_CLICK = 1000;
     const DISTANCE_STEP = 1; 
 
     // --- State Variables ---
     let scrollInterval = null;
-    let distancePerFrameX = DEFAULT_X_DISTANCE_PER_FRAME; // Horizontal distance
-    let distancePerFrameY = DEFAULT_Y_DISTANCE_PER_FRAME; // Vertical distance
+    let distancePerFrameX = DEFAULT_X_DISTANCE_PER_FRAME;
+    let distancePerFrameY = DEFAULT_Y_DISTANCE_PER_FRAME;
     let currentDirectionX = 1; // 1 for right (default), -1 for left
     let currentDirectionY = 1; // 1 for down (default), -1 for up
     let intervalMS = DEFAULT_INTERVAL_MS;
@@ -33,40 +34,64 @@
     function startScroll() {
         if (scrollInterval) return; 
 
-        // Calculate final scroll amounts for X and Y
         const scrollAmountX = distancePerFrameX * currentDirectionX;
         const scrollAmountY = distancePerFrameY * currentDirectionY;
 
-        // Check if any movement is specified
         if (scrollAmountX === 0 && scrollAmountY === 0) {
              console.warn("Scroll aborted: Both X and Y distances are set to zero.");
-             // Show the panel again so the user can fix the input
              document.getElementById(PANEL_ID).style.visibility = 'visible';
              return; 
         }
+
+        // Calculate Maximum Scrollable Boundaries (Total size minus viewport size)
+        const maxScrollX = document.documentElement.scrollWidth - window.innerWidth;
+        const maxScrollY = document.documentElement.scrollHeight - window.innerHeight;
 
         scrollInterval = setInterval(() => {
             // Diagonal Scroll Engine
             window.scrollBy(scrollAmountX, scrollAmountY);
 
-            // Simple stop logic: Stop if the scroll hits the edge in the direction of travel
-            const reachedEnd = (
-                (currentDirectionY === 1 && (window.innerHeight + window.scrollY) >= document.body.offsetHeight) ||
-                (currentDirectionY === -1 && window.scrollY <= 0)
-            );
-            const reachedSide = (
-                (currentDirectionX === 1 && (window.innerWidth + window.scrollX) >= document.body.scrollWidth) ||
-                (currentDirectionX === -1 && window.scrollX <= 0)
-            );
+            let shouldStop = false;
+            const currentScrollY = window.scrollY;
+            const currentScrollX = window.scrollX;
+            
+            // 1. Vertical Stop Condition
+            if (scrollAmountY !== 0) { 
+                if (scrollAmountY > 0) { // Scrolling Down
+                    // Stop if current scroll position is at or past the maximum limit
+                    if (currentScrollY >= maxScrollY) {
+                        shouldStop = true;
+                    }
+                } else { // Scrolling Up
+                    // Stop if current scroll position is at or below zero
+                    if (currentScrollY <= 0) {
+                        shouldStop = true;
+                    }
+                }
+            }
 
-            // Stop if both scrolls have hit their respective bounds or if only one is active and it hits its bound
-            if ((scrollAmountY !== 0 && reachedEnd) || (scrollAmountX !== 0 && reachedSide)) {
+            // 2. Horizontal Stop Condition
+            if (scrollAmountX !== 0) { 
+                if (scrollAmountX > 0) { // Scrolling Right
+                    // Stop if current scroll position is at or past the maximum limit
+                    if (currentScrollX >= maxScrollX) {
+                        shouldStop = true;
+                    }
+                } else { // Scrolling Left
+                    // Stop if current scroll position is at or below zero
+                    if (currentScrollX <= 0) {
+                        shouldStop = true;
+                    }
+                }
+            }
+
+            if (shouldStop) {
                 stopScroll();
             }
 
         }, intervalMS);
 
-        console.log(`Diagonal Scroll Started: X=${scrollAmountX}, Y=${scrollAmountY}, Interval=${intervalMS}ms.`);
+        console.log(`Scroll Started: X=${scrollAmountX}, Y=${scrollAmountY}, Interval=${intervalMS}ms. MaxY=${maxScrollY}`);
     }
 
     function stopScroll() {
@@ -173,7 +198,7 @@
     function initPanel() {
         if (document.getElementById(PANEL_ID)) return;
 
-        // 1. Panel Structure (Modified for X/Y distance and direction)
+        // 1. Panel Structure
         const panel = document.createElement('div');
         panel.id = PANEL_ID;
         panel.innerHTML = `
@@ -236,7 +261,7 @@
             </div>
         `;
 
-        // 2. Panel Styles (Updated to reflect new input layout)
+        // 2. Panel Styles (Unchanged)
         const style = document.createElement('style');
         style.textContent = `
             #${PANEL_ID} {
@@ -273,8 +298,6 @@
         
         // 3. Attach Event Listeners
         attachListeners(panel);
-        
-        // Initial setup for direction labels
         setAxisDirectionLabels();
     }
     
@@ -282,7 +305,6 @@
         const directionYSelect = document.getElementById('scroll-direction-y-select');
         const directionXSelect = document.getElementById('scroll-direction-x-select');
 
-        // This function is run once at init, labels are set via HTML template for Y and X
         if (directionYSelect) {
             directionYSelect.addEventListener('change', (e) => setDirectionY(e.target.value));
         }
@@ -295,10 +317,8 @@
     function attachListeners(panel) {
         const startBtn = document.getElementById('scroll-start-btn');
         const stopBtn = document.getElementById('scroll-stop-btn');
-        const distanceInputX = document.getElementById('scroll-distance-x-input'); // NEW
-        const distanceInputY = document.getElementById('scroll-distance-y-input'); // NEW
-        const directionSelectX = document.getElementById('scroll-direction-x-select'); 
-        const directionSelectY = document.getElementById('scroll-direction-y-select'); 
+        const distanceInputX = document.getElementById('scroll-distance-x-input'); 
+        const distanceInputY = document.getElementById('scroll-distance-y-input'); 
         const intervalInput = document.getElementById('scroll-interval-input'); 
         const upBtn = document.getElementById('scroll-up-btn');
         const downBtn = document.getElementById('scroll-down-btn');
@@ -311,8 +331,6 @@
         distanceInputX.addEventListener('change', (e) => setDistanceX(e.target.value)); 
         distanceInputY.addEventListener('change', (e) => setDistanceY(e.target.value)); 
         intervalInput.addEventListener('change', (e) => setIntervalMS(e.target.value)); 
-        
-        // Direction listeners are handled by setAxisDirectionLabels during init
         
         upBtn.addEventListener('click', () => window.scrollBy(0, -SCROLL_AMOUNT_PER_CLICK));
         downBtn.addEventListener('click', () => window.scrollBy(0, SCROLL_AMOUNT_PER_CLICK));
@@ -332,7 +350,7 @@
                     }
                 }
             } 
-            // ArrowUp/Down controls Y-axis distance if Y is non-zero
+            // ArrowUp/Down controls Y-axis distance
             else if (distancePerFrameY > 0) {
                  if (e.key === 'ArrowUp' && scrollInterval) {
                     e.preventDefault();
@@ -343,7 +361,7 @@
                     setDistanceY(distancePerFrameY - DISTANCE_STEP); 
                 }
             }
-            // Add ArrowLeft/Right for X-axis distance control if X is non-zero (Optional, for completeness)
+            // ArrowLeft/Right controls X-axis distance
             else if (distancePerFrameX > 0) {
                  if (e.key === 'ArrowRight' && scrollInterval) {
                     e.preventDefault();
@@ -356,9 +374,9 @@
             }
         });
 
-        // --- Draggable Panel Logic (Mouse & Touch) ---
+        // --- Draggable Panel Logic (Mouse) ---
         panel.addEventListener('mousedown', (e) => {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT' && e.target.id !== 'scroll-distance-x-input' && e.target.id !== 'scroll-distance-y-input') {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
                 isDragging = true;
                 dragOffsetX = e.clientX - panel.offsetLeft;
                 dragOffsetY = e.clientY - panel.offsetTop;
@@ -404,14 +422,14 @@
                 const deltaY = touchMoveY - touchStartY;
                 const deltaX = touchMoveX - touchStartX;
                 
-                // --- Speed/Distance control via vertical touch slide (for Y-axis distance)
+                // Vertical touch slide controls Y-axis distance
                 if (distancePerFrameY > 0 && Math.abs(deltaY) > 10) { 
                     const newDistance = distancePerFrameY + (deltaY * currentDirectionY < 0 ? DISTANCE_STEP : -DISTANCE_STEP); 
                     setDistanceY(newDistance); 
                     touchStartY = touchMoveY; 
                 }
                 
-                // --- Speed/Distance control via horizontal touch slide (for X-axis distance)
+                // Horizontal touch slide controls X-axis distance
                 if (distancePerFrameX > 0 && Math.abs(deltaX) > 10) { 
                     const newDistance = distancePerFrameX + (deltaX * currentDirectionX < 0 ? DISTANCE_STEP : -DISTANCE_STEP); 
                     setDistanceX(newDistance); 
