@@ -1,46 +1,54 @@
 /**
- * Smooth Scroll Utility - Open Source Edition
- * * A developer tool that creates a draggable, auto-hiding panel 
- * to control smooth, automated scrolling for screen recording.
- * * Install: Place this entire script in a <script> tag before the 
- * closing </body> tag on any web page.
- * * Features:
- * - Draggable UI panel (Ctrl+S to toggle visibility/start/stop).
- * - Adjustable scroll speed (px/frame).
- * - 3-second countdown before starting scroll.
- * - Panel auto-hides when scrolling starts.
- * - Panel reappears when scrolling stops.
+ * Smooth Scroll Utility - Open Source Edition (M-SpaceMedia)
+ * * Adds explicit Direction Control (Up/Down) to the UI.
  */
 (function() {
     // --- Configuration ---
     const PANEL_ID = 'dev-scroll-utility-panel';
-    const DEFAULT_SPEED = 10; // Pixels to scroll per interval (approx 60 FPS)
+    const DEFAULT_SPEED = 10; 
+    const DEFAULT_COUNTDOWN_SECONDS = 3;
     const DEFAULT_INTERVAL_MS = 16; 
     const SCROLL_AMOUNT_PER_CLICK = 1000;
-
+    const SPEED_STEP = 1; 
+    
     // --- State Variables ---
     let scrollInterval = null;
     let currentSpeed = DEFAULT_SPEED;
+    let currentDirection = 1; // 1 for down (default), -1 for up
     let isDragging = false;
     let dragOffsetX = 0;
     let dragOffsetY = 0;
+    
+    // Touch/Slide variables
+    let touchStartX = 0;
+    let touchStartY = 0;
 
     // --- Core Scrolling Logic ---
 
     function startScroll() {
         if (scrollInterval) return; 
 
+        // Apply direction to the speed. If currentDirection is -1, scrollUp will be used.
+        const scrollAmount = currentSpeed * currentDirection;
+
         scrollInterval = setInterval(() => {
-            window.scrollBy(0, currentSpeed);
+            window.scrollBy(0, scrollAmount);
 
-            // Stop when reaching the end of the page
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-                 stopScroll();
+            // Logic to stop at the end or top of the page
+            if (currentDirection === 1) {
+                 // Stop when reaching the bottom
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+                     stopScroll();
+                }
+            } else {
+                 // Stop when reaching the top
+                 if (window.scrollY <= 0) {
+                     stopScroll();
+                 }
             }
-
         }, DEFAULT_INTERVAL_MS);
 
-        console.log(`Smooth Scroll Started at speed: ${currentSpeed}px/frame.`);
+        console.log(`Smooth Scroll Started: Speed=${currentSpeed}, Direction=${currentDirection === 1 ? 'Down' : 'Up'}.`);
     }
 
     function stopScroll() {
@@ -50,11 +58,9 @@
 
             const panel = document.getElementById(PANEL_ID);
             if (panel) {
-                // REAPPEAR: Make the panel visible again when the scroll stops
                 panel.style.visibility = 'visible';
                 panel.classList.remove('is-active');
             }
-            // Re-enable start button, disable stop button
             document.getElementById('scroll-start-btn').disabled = false;
             document.getElementById('scroll-stop-btn').disabled = true;
 
@@ -63,33 +69,42 @@
     }
 
     function setSpeed(newSpeed) {
-        currentSpeed = Math.max(1, parseInt(newSpeed, 10));
+        currentSpeed = Math.max(1, parseInt(newSpeed, 10)); 
         const speedInput = document.getElementById('scroll-speed-input');
         if (speedInput) speedInput.value = currentSpeed;
 
         if (scrollInterval) {
-            stopScroll();
+            stopScroll(); 
             startScroll();
         }
+        console.log(`Scroll speed set to: ${currentSpeed}`);
+    }
+    
+    function setDirection(newDirection) {
+        currentDirection = parseInt(newDirection, 10);
+        if (scrollInterval) {
+            stopScroll(); 
+            startScroll();
+        }
+        console.log(`Scroll direction set to: ${currentDirection === 1 ? 'Down' : 'Up'}.`);
     }
 
     // --- Countdown and Start Logic ---
 
-    function startCountdownAndScroll(seconds = 3) {
+    function startCountdownAndScroll() {
         const display = document.getElementById('countdown-display');
         const startBtn = document.getElementById('scroll-start-btn');
         const stopBtn = document.getElementById('scroll-stop-btn');
         const panel = document.getElementById(PANEL_ID);
+        const countdownInput = document.getElementById('countdown-input');
 
         if (!display || !startBtn || !stopBtn || !panel || scrollInterval) return;
 
-        let counter = seconds;
+        let counter = Math.max(1, parseInt(countdownInput.value, 10) || DEFAULT_COUNTDOWN_SECONDS);
 
-        // Ensure panel is visible and active for the countdown
         panel.style.visibility = 'visible';
         panel.classList.add('is-active');
 
-        // Disable buttons during countdown
         startBtn.disabled = true;
         stopBtn.disabled = true;
         display.classList.add('active');
@@ -103,11 +118,9 @@
                 display.classList.remove('active');
                 display.textContent = ''; 
 
-                // Start scroll, but keep buttons disabled until stop
                 startScroll();
-                stopBtn.disabled = false; // Enable stop button
+                stopBtn.disabled = false;
 
-                // HIDE: Hide the panel immediately after scroll starts
                 panel.style.visibility = 'hidden';
             }
         }, 1000);
@@ -127,9 +140,23 @@
                 <span class="shortcut">Shortcut: <kbd>Ctrl+S</kbd></span>
             </div>
             <div class="controls">
+                
                 <div class="control-group">
+                    <label for="scroll-direction-select">Direction:</label>
+                    <select id="scroll-direction-select" style="width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; background: #333; color: white;">
+                        <option value="1">Down (Default)</option>
+                        <option value="-1">Up</option>
+                    </select>
+                </div>
+
+                <div class="control-group" style="margin-top: 10px;">
                     <label for="scroll-speed-input">Speed (px/frame):</label>
                     <input type="number" id="scroll-speed-input" value="${DEFAULT_SPEED}" min="1" step="1">
+                </div>
+                
+                <div class="control-group" style="margin-top: 10px;">
+                    <label for="countdown-input">Countdown (seconds):</label>
+                    <input type="number" id="countdown-input" value="${DEFAULT_COUNTDOWN_SECONDS}" min="1" max="10" step="1" style="width: 50%; display: inline-block;">
                 </div>
 
                 <button id="scroll-start-btn" class="action-btn start">Start Auto Scroll</button>
@@ -164,7 +191,7 @@
             #${PANEL_ID} .controls button, #${PANEL_ID} .controls input { width: 100%; padding: 8px; margin-top: 5px; border: none; border-radius: 4px; cursor: pointer; box-sizing: border-box; }
             #${PANEL_ID} .controls .action-btn.start { background: #4caf50; color: white; }
             #${PANEL_ID} .controls .action-btn.stop { background: #f44336; color: white; }
-            #${PANEL_ID} .controls input[type="number"] { background: #333; color: white; text-align: center; }
+            #${PANEL_ID} .controls input[type="number"], #${PANEL_ID} .controls select { background: #333; color: white; text-align: center; }
             #${PANEL_ID} .control-group { margin-bottom: 10px; }
             #${PANEL_ID} .control-group label { display: block; margin-bottom: 5px; }
             #${PANEL_ID} .manual-control { margin-top: 10px; border-top: 1px solid #444; padding-top: 10px; }
@@ -185,40 +212,47 @@
         const startBtn = document.getElementById('scroll-start-btn');
         const stopBtn = document.getElementById('scroll-stop-btn');
         const speedInput = document.getElementById('scroll-speed-input');
+        const directionSelect = document.getElementById('scroll-direction-select'); // NEW
         const upBtn = document.getElementById('scroll-up-btn');
         const downBtn = document.getElementById('scroll-down-btn');
 
-        startBtn.addEventListener('click', () => startCountdownAndScroll(3));
+        // Main actions and speed input
+        startBtn.addEventListener('click', startCountdownAndScroll);
         stopBtn.addEventListener('click', stopScroll);
         speedInput.addEventListener('change', (e) => setSpeed(e.target.value));
+        directionSelect.addEventListener('change', (e) => setDirection(e.target.value)); // NEW
+        
         upBtn.addEventListener('click', () => window.scrollBy(0, -SCROLL_AMOUNT_PER_CLICK));
         downBtn.addEventListener('click', () => window.scrollBy(0, SCROLL_AMOUNT_PER_CLICK));
 
-        // Keyboard Shortcut: Ctrl+S to Start/Stop/Toggle Visibility
+        // --- Keyboard Control (Ctrl+S, ArrowUp, ArrowDown) ---
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault(); 
                 
-                // If scrolling, stop it
                 if (scrollInterval) {
                     stopScroll();
-                // If not scrolling, start the countdown
                 } else if (!startBtn.disabled) {
-                    startCountdownAndScroll(3);
-                }
-                // If panel is hidden (but scroll isn't active), show it (for manual control)
-                else {
-                    const panel = document.getElementById(PANEL_ID);
+                    startCountdownAndScroll();
+                } else {
                     if (panel && panel.style.visibility === 'hidden') {
                          panel.style.visibility = 'visible';
                     }
                 }
+            } 
+            else if (e.key === 'ArrowUp' && scrollInterval) {
+                e.preventDefault();
+                setSpeed(currentSpeed + SPEED_STEP);
+            }
+            else if (e.key === 'ArrowDown' && scrollInterval) {
+                e.preventDefault();
+                setSpeed(currentSpeed - SPEED_STEP);
             }
         });
 
-        // Draggable Panel Logic
+        // --- Draggable Panel Logic (Mouse) ---
         panel.addEventListener('mousedown', (e) => {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
                 isDragging = true;
                 dragOffsetX = e.clientX - panel.offsetLeft;
                 dragOffsetY = e.clientY - panel.offsetTop;
@@ -233,6 +267,49 @@
         document.addEventListener('mouseup', () => {
             isDragging = false;
             panel.style.cursor = 'grab';
+        });
+
+        // --- Touch/Slide Control (Mobile) ---
+        panel.addEventListener('touchstart', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
+            
+            e.preventDefault(); 
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            
+            isDragging = true; 
+            dragOffsetX = touchStartX - panel.offsetLeft;
+            dragOffsetY = touchStartY - panel.offsetTop;
+        });
+
+        panel.addEventListener('touchmove', (e) => {
+            e.preventDefault(); 
+            if (e.touches.length === 0) return;
+
+            const touchMoveX = e.touches[0].clientX;
+            const touchMoveY = e.touches[0].clientY;
+
+            if (isDragging) {
+                panel.style.left = `${touchMoveX - dragOffsetX}px`;
+                panel.style.top = `${touchMoveY - dragOffsetY}px`;
+            }
+
+            if (scrollInterval) {
+                const deltaY = touchMoveY - touchStartY;
+                
+                if (Math.abs(deltaY) > 10) { 
+                    const directionMultiplier = currentDirection; // Use current direction for speed change logic
+                    // Swiping against the current scroll direction (e.g., swiping down when scrolling up) increases speed
+                    const newSpeed = currentSpeed + (deltaY * directionMultiplier < 0 ? SPEED_STEP : -SPEED_STEP); 
+                    
+                    setSpeed(newSpeed);
+                    touchStartY = touchMoveY; 
+                }
+            }
+        });
+
+        panel.addEventListener('touchend', () => {
+            isDragging = false;
         });
     }
 
