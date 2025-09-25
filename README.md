@@ -1,8 +1,8 @@
-# Smooth Scroll Utility
+# Dev Scroll Utility
 
 ## 💡 About
 
-The Smooth Scroll Utility is a simple, lightweight, and cross-browser JavaScript snippet designed for web developers, quality assurance (QA) testers, and content creators who need to record high-quality, jitter-free video demonstrations of webpages.
+The Dev Scroll Utility is a simple, lightweight, and cross-browser JavaScript snippet designed for web developers, quality assurance (QA) testers, and content creators who need to record high-quality, jitter-free video demonstrations of webpages.
 
 This utility creates a discreet, auto-hiding control panel that allows for consistent, slow, and smooth scrolling of any webpage, making your screen recordings professional and seamless.
 
